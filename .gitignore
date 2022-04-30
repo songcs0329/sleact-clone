@@ -1,0 +1,7 @@
+node_modules
+.env
+ch*
+front-*
+nest-typeorm
+setting
+alecture
