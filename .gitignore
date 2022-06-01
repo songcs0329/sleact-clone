@@ -1,6 +1,8 @@
 node_modules
 .env
-ch*
+ch1
+ch2
+ch3
 front-*
 nest-typeorm
 setting
