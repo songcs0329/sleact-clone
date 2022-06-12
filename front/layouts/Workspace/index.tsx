@@ -1,11 +1,11 @@
-import React, { FC, useCallback, useState } from "react"
+import React, { VFC, useCallback, useState } from "react"
 import axios from "axios"
 import useSWR from "swr"
 import fetcher from "@utils/fetcher"
-import { Link, Redirect, Route, Switch } from "react-router-dom"
+import { Link, Redirect, Route, Switch, useParams } from "react-router-dom"
 import gravatar from "gravatar"
 import loadable from "@loadable/component"
-import { IUser } from "@typings/db"
+import { IChannel, IUser } from "@typings/db"
 import useInput from "@hooks/useInput"
 import { Button, Input, Label } from "@pages/SignUp/styles"
 import {
@@ -19,6 +19,7 @@ import {
   ProfileModal,
   RightMenu,
   WorkspaceButton,
+  WorkspaceModal,
   WorkspaceName,
   Workspaces,
   WorkspaceWrapper,
@@ -26,12 +27,16 @@ import {
 import Menu from "@components/Menu"
 import Modal from "@components/Modal"
 import { toast, ToastContainer } from "react-toastify"
+import CreateChannelModal from "@components/CreateChannelModal"
 const Channel = loadable(() => import("@pages/Channel"))
 const DirectMessage = loadable(() => import("@pages/DirectMessage"))
 
-const Workspace: FC = ({ children }) => {
+const Workspace: VFC = () => {
+  const { workspace } = useParams<{ workspace: string }>()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false)
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
+  const [showCreateChannelModal, setShowCreateChannelModal] = useState(false)
   const [newWorkspace, onChangeNewWorkspace, setNewWorkspace] = useInput("")
   const [newUrl, onChangeNewUrl, setrNewUrl] = useInput("")
   const {
@@ -41,6 +46,11 @@ const Workspace: FC = ({ children }) => {
   } = useSWR<IUser | false>("http://localhost:3095/api/users", fetcher, {
     dedupingInterval: 2000,
   })
+  const { data: channelData } = useSWR<IChannel[]>(
+    userData ? `http://localhost:3095/api/workspaces/${workspace}/channels` : null,
+    fetcher,
+  )
+  console.log(channelData)
 
   const onLogout = useCallback(() => {
     axios
@@ -63,6 +73,7 @@ const Workspace: FC = ({ children }) => {
   }, [])
   const onCloseModal = useCallback(() => {
     setShowCreateWorkspaceModal(false)
+    setShowCreateChannelModal(false)
   }, [])
   const onCreateWorkspace = useCallback(
     (e) => {
@@ -88,6 +99,12 @@ const Workspace: FC = ({ children }) => {
     },
     [newWorkspace, newUrl],
   )
+  const toggleWorkspaceModal = useCallback(() => {
+    setShowWorkspaceModal((prev) => !prev)
+  }, [])
+  const onClickAddChannel = useCallback(() => {
+    setShowCreateChannelModal(true)
+  }, [])
 
   if (!userData) return <Redirect to={"/login"} />
   return (
@@ -123,13 +140,24 @@ const Workspace: FC = ({ children }) => {
           <AddButton onClick={onClickCreateWorkspace}>+</AddButton>
         </Workspaces>
         <Channels>
-          <WorkspaceName>Sleact</WorkspaceName>
-          <MenuScroll>Menu scroll</MenuScroll>
+          <WorkspaceName onClick={toggleWorkspaceModal}>Sleact</WorkspaceName>
+          <MenuScroll>
+            <Menu show={showWorkspaceModal} onCloseModal={toggleWorkspaceModal} style={{ top: 95, left: 80 }}>
+              <WorkspaceModal>
+                <h2>sleact</h2>
+                <button onClick={onClickAddChannel}>채널만들기</button>
+                <button onClick={onLogout}>로그아웃</button>
+              </WorkspaceModal>
+            </Menu>
+            {channelData?.map((v) => (
+              <div key={v.id}>{v.name}</div>
+            ))}
+          </MenuScroll>
         </Channels>
         <Chats>
           <Switch>
-            <Route path={"/workspace/channel"} component={Channel} />
-            <Route path={"/workspace/dm"} component={DirectMessage} />
+            <Route path={"/workspace/:workspace/channel/:channel"} component={Channel} />
+            <Route path={"/workspace/:workspace/dm/:id"} component={DirectMessage} />
           </Switch>
         </Chats>
       </WorkspaceWrapper>
@@ -148,6 +176,11 @@ const Workspace: FC = ({ children }) => {
           </Button>
         </form>
       </Modal>
+      <CreateChannelModal
+        show={showCreateChannelModal}
+        onCloseModal={onCloseModal}
+        setShowCreateChannelModal={setShowCreateChannelModal}
+      />
       <ToastContainer position="bottom-center" />
     </div>
   )

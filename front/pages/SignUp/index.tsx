@@ -56,7 +56,7 @@ const SignUp = () => {
   )
 
   if (data === undefined) return <div>Loading...</div>
-  if (data) return <Redirect to={"/workspace/channel"} />
+  if (data) return <Redirect to={"/workspace/sleact/channel/일반"} />
   return (
     <div id="container">
       <Header>Sleact</Header>

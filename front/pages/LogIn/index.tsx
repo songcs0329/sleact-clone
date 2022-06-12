@@ -18,9 +18,8 @@ const LogIn = () => {
       setLogInError(false)
       axios
         .post("http://localhost:3095/api/users/login", { email, password }, { withCredentials: true })
-        .then((response) => {
-          console.log(response)
-          mutate(response.data, false)
+        .then(() => {
+          mutate()
         })
         .catch((error) => {
           console.log(error.respoonse)
@@ -32,7 +31,7 @@ const LogIn = () => {
   )
 
   if (data === undefined) return <div>Loading...</div>
-  if (data) return <Redirect to={"/workspace/channel"} />
+  if (data) return <Redirect to={"/workspace/sleact/channel/일반"} />
   return (
     <div id="container">
       <Header>Sleact</Header>
