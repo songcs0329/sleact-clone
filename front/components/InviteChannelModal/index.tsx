@@ -12,53 +12,57 @@ import fetcher from "@utils/fetcher"
 interface Props {
   show: boolean
   onCloseModal: () => void
-  setShowCreateChannelModal: (flag: boolean) => void
+  setShowInviteChannelModal: (flag: boolean) => void
 }
 
-const CreateChannelModal: VFC<Props> = ({ show, onCloseModal, setShowCreateChannelModal }) => {
-  const { workspace } = useParams<{ workspace?: string }>()
-  const [newChannel, onChangeNewChannel, setNewChannl] = useInput("")
+const InviteChannelModal: VFC<Props> = ({ show, onCloseModal, setShowInviteChannelModal }) => {
+  const { workspace, channel } = useParams<{ workspace?: string; channel?: string }>()
+  const [newMember, onChangeNewMember, setNewMember] = useInput("")
   const { data: userData } = useSWR<IUser | false>("/api/users", fetcher, {
     dedupingInterval: 2000,
   })
-  const { mutate: revalidateChannels } = useSWR<IChannel[]>(
-    userData ? `/api/workspaces/${workspace}/channels` : null,
+  const { mutate: revalidateChannelMembers } = useSWR<IChannel[]>(
+    userData ? `/api/workspaces/${workspace}/channels/${channel}/members` : null,
     fetcher,
   )
 
   const onCreateChannel = useCallback(
     (e) => {
       e.preventDefault()
-      if (!newChannel || !newChannel.trim()) return
+      if (!newMember || !newMember.trim()) return
       axios
-        .post(`/api/workspaces/${workspace}/channels`, { name: newChannel }, { withCredentials: true })
+        .post(
+          `/api/workspaces/${workspace}/channels/${channel}/members`,
+          { email: newMember },
+          { withCredentials: true },
+        )
         .then(() => {
-          revalidateChannels()
-          setShowCreateChannelModal(false)
-          setNewChannl("")
+          revalidateChannelMembers()
+          setShowInviteChannelModal(false)
+          setNewMember("")
         })
         .catch((error) => {
           console.dir(error)
           toast.error(error.response?.data, { position: "bottom-center" })
         })
     },
-    [newChannel],
+    [newMember],
   )
 
   if (!show) return null
   return (
     <Modal show={show} onCloseModal={onCloseModal}>
       <form onSubmit={onCreateChannel}>
-        <Label id="channel-label">
-          <span>워크스페이스 이름</span>
-          <Input id="channel" value={newChannel} onChange={onChangeNewChannel} />
+        <Label id="member-label">
+          <span>채널 멤버 초대</span>
+          <Input id="member" value={newMember} onChange={onChangeNewMember} />
         </Label>
         <Button type="submit" onClick={onCreateChannel}>
-          생성하기
+          초대하기
         </Button>
       </form>
     </Modal>
   )
 }
 
-export default CreateChannelModal
+export default InviteChannelModal
