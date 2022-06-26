@@ -2,10 +2,10 @@ import React, { VFC, useCallback, useState } from "react"
 import axios from "axios"
 import useSWR from "swr"
 import fetcher from "@utils/fetcher"
-import { Link, Redirect, Route, Switch, useParams } from "react-router-dom"
+import { Link, Redirect, Route, Switch } from "react-router-dom"
 import gravatar from "gravatar"
 import loadable from "@loadable/component"
-import { IChannel, IUser } from "@typings/db"
+import { IUser } from "@typings/db"
 import useInput from "@hooks/useInput"
 import { Button, Input, Label } from "@pages/SignUp/styles"
 import {
@@ -35,7 +35,6 @@ const Channel = loadable(() => import("@pages/Channel"))
 const DirectMessage = loadable(() => import("@pages/DirectMessage"))
 
 const Workspace: VFC = () => {
-  const { workspace } = useParams<{ workspace: string }>()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false)
   const [showInviteWorkspaceModal, setShowInviteWorkspaceModal] = useState(false)
@@ -43,11 +42,7 @@ const Workspace: VFC = () => {
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false)
   const [newWorkspace, onChangeNewWorkspace, setNewWorkspace] = useInput("")
   const [newUrl, onChangeNewUrl, setrNewUrl] = useInput("")
-  const {
-    data: userData,
-    error,
-    mutate: revalidateUserData,
-  } = useSWR<IUser | false>("/api/users", fetcher, {
+  const { data: userData, mutate: revalidateUserData } = useSWR<IUser | false>("/api/users", fetcher, {
     dedupingInterval: 2000,
   })
 
@@ -59,7 +54,7 @@ const Workspace: VFC = () => {
       .then(() => {
         revalidateUserData(false, false)
       })
-  }, [])
+  }, [revalidateUserData])
   const onClickUserProfile = useCallback(() => {
     setShowUserMenu((prev) => !prev)
   }, [])
@@ -96,7 +91,7 @@ const Workspace: VFC = () => {
           toast.error(error.response?.data, { position: "bottom-center" })
         })
     },
-    [newWorkspace, newUrl],
+    [newWorkspace, newUrl, setNewWorkspace, setrNewUrl, revalidateUserData],
   )
   const toggleWorkspaceModal = useCallback(() => {
     setShowWorkspaceModal((prev) => !prev)
