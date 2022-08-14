@@ -16,7 +16,7 @@ const DirectMessage = () => {
   const { data: userData } = useSWR<IUser>(`/api/workspaces/${workspace}/users/${id}`, fetcher)
   const [chat, onChangeChat, setChat] = useInput("")
   const { data: chatData, mutate: mutateChat } = useSWR<IDM[]>(
-    `/workspaces/${workspace}/dms/${id}/chats?perPage=20&page=1`,
+    `/api/workspaces/${workspace}/dms/${id}/chats?perPage=20&page=1`,
     fetcher,
   )
   console.log("chatData", chatData)
@@ -26,7 +26,7 @@ const DirectMessage = () => {
       e.preventDefault()
       if (chat?.trim()) {
         axios
-          .post(`api/workspaces/${workspace}/dms/${id}/chats`, {
+          .post(`/api/workspaces/${workspace}/dms/${id}/chats`, {
             content: chat,
           })
           .then((response) => {
