@@ -1,11 +1,11 @@
-import React, { VFC, useCallback, useState } from "react"
+import React, { VFC, useCallback, useState, useEffect } from "react"
 import axios from "axios"
 import useSWR from "swr"
 import fetcher from "@utils/fetcher"
-import { Link, Redirect, Route, Switch } from "react-router-dom"
+import { Link, Redirect, Route, Switch, useParams } from "react-router-dom"
 import gravatar from "gravatar"
 import loadable from "@loadable/component"
-import { IUser } from "@typings/db"
+import { IChannel, IUser } from "@typings/db"
 import useInput from "@hooks/useInput"
 import { Button, Input, Label } from "@pages/SignUp/styles"
 import {
@@ -31,6 +31,7 @@ import CreateChannelModal from "@components/CreateChannelModal"
 import InviteWorkspaceModal from "@components/InviteWorkspaceModal"
 import ChannelList from "@components/ChannelList"
 import DMList from "@components/DMList"
+import useSocket from "@hooks/useSocket"
 const Channel = loadable(() => import("@pages/Channel"))
 const DirectMessage = loadable(() => import("@pages/DirectMessage"))
 
@@ -42,9 +43,13 @@ const Workspace: VFC = () => {
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false)
   const [newWorkspace, onChangeNewWorkspace, setNewWorkspace] = useInput("")
   const [newUrl, onChangeNewUrl, setrNewUrl] = useInput("")
+
+  const { workspace } = useParams<{ workspace: string }>()
   const { data: userData, mutate: revalidateUserData } = useSWR<IUser | false>("/api/users", fetcher, {
     dedupingInterval: 2000,
   })
+  const { data: channelData } = useSWR<IChannel[]>(userData ? `/api/workspaces/${workspace}/channels` : null, fetcher)
+  const [socket, disconnect] = useSocket(workspace)
 
   const onLogout = useCallback(() => {
     axios
@@ -102,6 +107,19 @@ const Workspace: VFC = () => {
   const onClickInviteWorkspace = useCallback(() => {
     setShowInviteWorkspaceModal(true)
   }, [])
+
+  useEffect(() => {
+    return () => {
+      console.info("disconnect socket", workspace)
+      disconnect()
+    }
+  }, [disconnect, workspace])
+  useEffect(() => {
+    if (channelData && userData) {
+      console.info("로그인하자", socket)
+      socket?.emit("login", { id: userData?.id, channels: channelData.map((v) => v.id) })
+    }
+  }, [socket, userData, channelData])
 
   if (!userData) return <Redirect to={"/login"} />
   return (
